@@ -51,7 +51,6 @@ func readCSV(csvFileName string) ([]Employee, error) {
 }
 
 func writeToJsonFile(employees []Employee, outputFileName string) error {
-	//fmt.Println("Run function: write_with_Json")
 	employeesByte, err := json.Marshal(employees)
 	if err != nil {
 		return err
@@ -80,7 +79,7 @@ func writeToYaml([]Employee) error {
 func main() {
 	var outputFileName string
 	var outputFormat string
-	outputFormatFunctions := map[string]func([]Employee, string) error{"json": writeToJsonFile} // determine by variable output_format
+	outputFormatFunctions := map[string]func([]Employee, string) error{"json": writeToJsonFile} // determine by variable outputFormat
 
 	app := cli.NewApp()
 	app.Name = "csv2json"
@@ -101,25 +100,24 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		// println(outputFileName, outputFormat, outputFormatFunctions[outputFormat], reflect.TypeOf(outputFormatFunctions[outputFormat]))
+		//println(outputFileName, outputFormat, outputFormatFunctions[outputFormat], reflect.TypeOf(outputFormatFunctions[outputFormat]))
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
-			return fmt.Errorf("Non supported output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
+			//fmt.Println(employees)
 			if err != nil {
 				fmt.Println("Parsing csv file failed. Error message:", err)
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
-
 			}
 			//fmt.Println(employees, reflect.TypeOf(employees))
 
@@ -127,11 +125,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-
 		}
-
 		return nil
 	}
-
+	//fmt.Println(os.Args)
 	app.Run(os.Args)
 }
