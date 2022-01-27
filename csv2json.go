@@ -25,13 +25,13 @@ func readCSV(csvFileName string) ([]Employee, error) {
 	csvFile, err := os.Open(csvFileName)
 	defer csvFile.Close()
 	if err != nil {
-		return nil, err
+		return []Employee{}, err
 	}
 
 	csvReader := csv.NewReader(csvFile)
 	lines, err := csvReader.ReadAll()
 	if err != nil {
-		return nil, err
+		return []Employee{}, err
 	}
 
 	var employees []Employee = []Employee{}
@@ -103,13 +103,16 @@ func main() {
 		//println(outputFileName, outputFormat, outputFormatFunctions[outputFormat], reflect.TypeOf(outputFormatFunctions[outputFormat]))
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
+			return fmt.Errorf("This tool require only one parameter as target file")
 		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
 			//fmt.Println(employees)
@@ -118,13 +121,15 @@ func main() {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 			//fmt.Println(employees, reflect.TypeOf(employees))
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}

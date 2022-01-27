@@ -31,9 +31,9 @@ func TestValidReadCSV(t *testing.T) {
 func TestInvalidReadCSV(t *testing.T) {
 	testFileName := "csv/error.csv"
 	employees, err := readCSV(testFileName)
-	expectedEmployees := []Employee{}
+	var expectedEmployees = []Employee{}
 
-	assert.Equal(t, err, nil)
+	assert.NotEqual(t, err, nil)
 	assert.Equal(t, employees, expectedEmployees)
 }
 
@@ -94,14 +94,16 @@ func TestValidCommand(t *testing.T) {
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
 			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
 			if err != nil {
@@ -109,16 +111,17 @@ func TestValidCommand(t *testing.T) {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}
-	app.Run(os.Args)
 
 	err := app.Run(os.Args)
 	assert.Equal(t, err, nil)
@@ -153,14 +156,16 @@ func TestNotExistTargetCommand(t *testing.T) {
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
 			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
 			if err != nil {
@@ -168,16 +173,17 @@ func TestNotExistTargetCommand(t *testing.T) {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}
-	app.Run(os.Args)
 
 	err := app.Run(os.Args)
 	assert.NotEqual(t, err, nil)
@@ -211,15 +217,16 @@ func TestNoArgumentCommand(t *testing.T) {
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
-			fmt.Errorf("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
 			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
 			if err != nil {
@@ -227,18 +234,20 @@ func TestNoArgumentCommand(t *testing.T) {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}
 
 	err := app.Run(os.Args)
-	assert.Equal(t, err, nil)
+	assert.NotEqual(t, err, nil)
 }
 
 func TestMultiAugumentCommand(t *testing.T) {
@@ -269,14 +278,16 @@ func TestMultiAugumentCommand(t *testing.T) {
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
 			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
 			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
 		} else {
 			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
 			if err != nil {
@@ -284,12 +295,75 @@ func TestMultiAugumentCommand(t *testing.T) {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
+		}
+		return nil
+	}
+
+	err := app.Run(os.Args)
+	assert.NotEqual(t, err, nil)
+}
+
+func TestBinaryInputCommand(t *testing.T) {
+	os.Args = []string{"./csv2json", "-o", "unit_test.json", "-f", "json", "csv/error.csv"} // mock CLI for unit test
+
+	var outputFileName string
+	var outputFormat string
+	outputFormatFunctions := map[string]func([]Employee, string) error{"json": writeToJsonFile} // determine by variable output_format
+
+	app := cli.NewApp()
+	app.Name = "csv2json"
+	app.Usage = "convert csv file to json file"
+
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:        "output,o",
+			Usage:       "Specify the output file name",
+			Value:       "Employees",
+			Destination: &outputFileName,
+		},
+		&cli.StringFlag{
+			Name:        "format,f",
+			Usage:       "Specify format of output file",
+			Value:       "json",
+			Destination: &outputFormat,
+		},
+	}
+	app.Action = func(c *cli.Context) error {
+		if c.NArg() < 1 {
+			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
+		} else if c.NArg() > 1 {
+			fmt.Println("This tool require only one parameter as target file")
+			return fmt.Errorf("This tool require only one parameter as target file")
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
+			fmt.Println("Designated file dose not exist")
+			return err
+		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
+			fmt.Println("Wrong output format")
+			return fmt.Errorf("Wrong output format")
+		} else {
+			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
+			if err != nil {
+				fmt.Println("Parsing csv file failed. Error message:", err)
+				return err
+			} else if len(employees) == 0 {
+				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
+			}
+
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
+			if err != nil {
+				return err
+			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}
@@ -326,10 +400,11 @@ func TestWrongFormatCommand(t *testing.T) {
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			fmt.Println("Designate a file to parse")
+			return fmt.Errorf("Designate a file to parse")
 		} else if c.NArg() > 1 {
 			fmt.Println("This tool require only one parameter as target file")
 			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) { // Lack input file
+		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
 			fmt.Println("Designated file dose not exist")
 			return err
 		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
@@ -342,12 +417,14 @@ func TestWrongFormatCommand(t *testing.T) {
 				return err
 			} else if len(employees) == 0 {
 				fmt.Println("Can't parse any employee from target file")
+				return fmt.Errorf("Can't parse any employee from target file")
 			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call decode function
+			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
 			if err != nil {
 				return err
 			}
+			fmt.Println("Convert successfully! Output File is:", outputFileName)
 		}
 		return nil
 	}
