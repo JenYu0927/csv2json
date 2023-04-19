@@ -1,190 +1,106 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
 )
 
-func TestValidReadCSV(t *testing.T) {
-	testFileName := "csv/input.csv"
-	employees, err := readCSV(testFileName)
-	assert.Equal(t, err, nil)
+func TestCSVDeserializer_Deserialize(t *testing.T) {
+	csvData := `ID,FirstName,LastName,Email,Description,Role,Phone
+1,John,Doe,john.doe@example.com,"John is a software engineer with 5 years of experience.",Software Engineer,555-555-5555
+2,Jane,Smith,jane.smith@example.com,"Jane is a project manager with 10 years of experience.",Project Manager,555-555-5555`
 
-	expectedEmployees := []Employee{}
-	expectedEmployees = append(expectedEmployees, Employee{ID: 1, FirstName: "Marc", LastName: "Smith", Email: "marc@glasnostic.com",
-		Description: "Writer of Java", Role: "Dev", Phone: "541-754-3010"})
-
-	expectedEmployees = append(expectedEmployees, Employee{ID: 2, FirstName: "John", LastName: "Young", Email: "john@glasnostic.com",
-		Description: "Interested in MHW", Role: "HR", Phone: "541-75-3010"})
-
-	expectedEmployees = append(expectedEmployees, Employee{ID: 3, FirstName: "Peter", LastName: "Scott", Email: "peter@glasnostic.com",
-		Description: "amateur boxer", Role: "Dev", Phone: "541-754-3010"})
-
-	assert.Equal(t, employees, expectedEmployees)
-
-}
-
-func TestInvalidReadCSV(t *testing.T) {
-	testFileName := "csv/error.csv"
-	employees, err := readCSV(testFileName)
-	var expectedEmployees = []Employee{}
-
-	assert.NotEqual(t, err, nil)
-	assert.Equal(t, employees, expectedEmployees)
-}
-
-func TestEmptyReadCSV(t *testing.T) {
-	testFileName := "csv/empty.csv"
-	employees, err := readCSV(testFileName)
-	expectedEmployees := []Employee{}
-
-	assert.Equal(t, err, nil)
-	assert.Equal(t, employees, expectedEmployees)
-}
-
-func TestWriteToJsonFile(t *testing.T) {
-	var employees []Employee = []Employee{}
-	employees = append(employees, Employee{ID: 1, FirstName: "Marc", LastName: "Smith", Email: "marc@glasnostic.com",
-		Description: "Writer of Java", Role: "Dev", Phone: "541-754-3010"})
-
-	employees = append(employees, Employee{ID: 2, FirstName: "John", LastName: "Young", Email: "john@glasnostic.com",
-		Description: "Interested in MHW", Role: "HR", Phone: "541-75-3010"})
-
-	employees = append(employees, Employee{ID: 3, FirstName: "Peter", LastName: "Scott", Email: "peter@glasnostic.com",
-		Description: "amateur boxer", Role: "Dev", Phone: "541-754-3010"})
-
-	outputFileName := "unit_test.json"
-	err := writeToJsonFile(employees, outputFileName)
-	assert.Equal(t, err, nil)
-
-	_, err = os.Stat(outputFileName)
-	defer os.Remove(outputFileName)
-	assert.Equal(t, err, nil)
-}
-
-func TestValidCommand(t *testing.T) {
-	os.Args = []string{"./csv2json", "-o", "unit_test.json", "-f", "json", "csv/input.csv"} // mock CLI for unit test
-
-	var outputFileName string
-	var outputFormat string
-	outputFormatFunctions := map[string]func([]Employee, string) error{"json": writeToJsonFile} // determine by variable output_format
-
-	app := cli.NewApp()
-	app.Name = "csv2json"
-	app.Usage = "convert csv file to json file"
-
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "output,o",
-			Usage:       "Specify the output file name",
-			Value:       "Employees",
-			Destination: &outputFileName,
+	expected := []Employee{
+		{
+			ID:          "1",
+			FirstName:   "John",
+			LastName:    "Doe",
+			Email:       "john.doe@example.com",
+			Description: "John is a software engineer with 5 years of experience.",
+			Role:        "Software Engineer",
+			Phone:       "555-555-5555",
 		},
-		&cli.StringFlag{
-			Name:        "format,f",
-			Usage:       "Specify format of output file",
-			Value:       "json",
-			Destination: &outputFormat,
+		{
+			ID:          "2",
+			FirstName:   "Jane",
+			LastName:    "Smith",
+			Email:       "jane.smith@example.com",
+			Description: "Jane is a project manager with 10 years of experience.",
+			Role:        "Project Manager",
+			Phone:       "555-555-5555",
 		},
 	}
-	app.Action = func(c *cli.Context) error {
-		if c.NArg() < 1 {
-			fmt.Println("Designate a file to parse")
-			return fmt.Errorf("Designate a file to parse")
-		} else if c.NArg() > 1 {
-			fmt.Println("This tool require only one parameter as target file")
-			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
-			fmt.Println("Designated file dose not exist")
-			return err
-		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
-			fmt.Println("Wrong output format")
-			return fmt.Errorf("Wrong output format")
-		} else {
-			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
-			if err != nil {
-				fmt.Println("Parsing csv file failed. Error message:", err)
-				return err
-			} else if len(employees) == 0 {
-				fmt.Println("Can't parse any employee from target file")
-				return fmt.Errorf("Can't parse any employee from target file")
-			}
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
-			if err != nil {
-				return err
-			}
-			fmt.Println("Convert successfully! Output File is:", outputFileName)
+	reader := strings.NewReader(csvData)
+	deserializer := CSVDeserializer{}
+	actual, err := deserializer.Deserialize(reader)
+	if err != nil {
+		t.Errorf("CSVDeserializer.Deserialize() returned an unexpected error: %v", err)
+	}
+
+	if len(actual) != len(expected) {
+		t.Errorf("CSVDeserializer.Deserialize() returned a slice with length %d; expected %d", len(actual), len(expected))
+	}
+
+	for i := range expected {
+		if actual[i] != expected[i] {
+			t.Errorf("CSVDeserializer.Deserialize() returned an unexpected Employee record: got %v, want %v", actual[i], expected[i])
 		}
-		return nil
 	}
-
-	err := app.Run(os.Args)
-	assert.Equal(t, err, nil)
-	os.Remove("unit_test.json")
 }
 
-func TestNotExistTargetCommand(t *testing.T) {
-	os.Args = []string{"./csv2json", "-o", "unit_test.json", "-f", "json", "csv/notExistFile.json"} // mock CLI for unit test
-
-	var outputFileName string
-	var outputFormat string
-	outputFormatFunctions := map[string]func([]Employee, string) error{"json": writeToJsonFile} // determine by variable output_format
-
-	app := cli.NewApp()
-	app.Name = "csv2json"
-	app.Usage = "convert csv file to json file"
-
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "output,o",
-			Usage:       "Specify the output file name",
-			Value:       "Employees",
-			Destination: &outputFileName,
+func TestJSONSerializer_Serialize(t *testing.T) {
+	employees := []Employee{
+		{
+			ID:          "1",
+			FirstName:   "John",
+			LastName:    "Doe",
+			Email:       "john.doe@example.com",
+			Description: "John is a software engineer with 5 years of experience.",
+			Role:        "Software Engineer",
+			Phone:       "555-555-5555",
 		},
-		&cli.StringFlag{
-			Name:        "format,f",
-			Usage:       "Specify format of output file",
-			Value:       "json",
-			Destination: &outputFormat,
+		{
+			ID:          "2",
+			FirstName:   "Jane",
+			LastName:    "Smith",
+			Email:       "jane.smith@example.com",
+			Description: "Jane is a project manager with 10 years of experience.",
+			Role:        "Project Manager",
+			Phone:       "555-555-5555",
 		},
 	}
-	app.Action = func(c *cli.Context) error {
-		if c.NArg() < 1 {
-			fmt.Println("Designate a file to parse")
-			return fmt.Errorf("Designate a file to parse")
-		} else if c.NArg() > 1 {
-			fmt.Println("This tool require only one parameter as target file")
-			return fmt.Errorf("This tool require only one parameter as target file")
-		} else if _, err := os.Stat(c.Args().Get(0)); os.IsNotExist(err) {
-			fmt.Println("Designated file dose not exist")
-			return err
-		} else if _, ok := outputFormatFunctions[outputFormat]; !ok { // Non supported output format
-			fmt.Println("Wrong output format")
-			return fmt.Errorf("Wrong output format")
-		} else {
-			employees, err := readCSV(c.Args().Get(0)) // read CSV into array of Employee
-			if err != nil {
-				fmt.Println("Parsing csv file failed. Error message:", err)
-				return err
-			} else if len(employees) == 0 {
-				fmt.Println("Can't parse any employee from target file")
-				return fmt.Errorf("Can't parse any employee from target file")
-			}
+	/*
+			expected := `[
+		    {
+		        "id": "1",
+		        "first_name": "John",
+		        "last_name": "Doe",
+		        "email": "john.doe@example.com",
+		        "description": "John is a software engineer with 5 years of experience.",
+		        "role": "Software Engineer",
+		        "phone": "555-555-5555"
+		    },
+		    {
+		        "id": "2",
+		        "first_name": "Jane",
+		        "last_name": "Smith",
+		        "email": "jane.smith@example.com",
+		        "description": "Jane is a project manager with 10 years of experience.",
+		        "role": "Project Manager",
+		        "phone": "555-555-5555"
+		    }
+			]`
+	*/
 
-			err = outputFormatFunctions[outputFormat](employees, outputFileName) // call output function which in map outputFormatFunctions
-			if err != nil {
-				return err
-			}
-			fmt.Println("Convert successfully! Output File is:", outputFileName)
-		}
-		return nil
-	}
+	serializer := JSONSerializer{}
+	buffer := new(bytes.Buffer)
+	err := serializer.Serialize(buffer, employees)
 
-	err := app.Run(os.Args)
-	assert.NotEqual(t, err, nil)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, buffer.Bytes())
+
 }

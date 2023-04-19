@@ -43,8 +43,9 @@ type CSVDeserializer struct{}
 // Convert reads data from a CSV file and returns a slice of Employee records.
 func (d CSVDeserializer) Deserialize(reader io.Reader) ([]Employee, error) {
 	csvReader := csv.NewReader(reader)
-	var employees []Employee
+	csvReader.Read() // skip the first line
 
+	var employees []Employee
 	for {
 		line, err := csvReader.Read()
 		if err == io.EOF {
