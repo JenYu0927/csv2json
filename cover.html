@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>csv2json: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/taylor.jiang/csv2json/csv2json.go (59.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "encoding/csv"
+        "encoding/json"
+        "errors"
+        "flag"
+        "fmt"
+        "io"
+        "log"
+        "os"
+        "path/filepath"
+        "strings"
+)
+
+// DataFormat represents a supported data format.
+type DataFormat int
+
+const (
+        Unknown DataFormat = iota
+        CSV
+        // Add additional data formats here...
+)
+
+// Employee represents an employee record.
+type Employee struct {
+        ID          string `json:"id"`
+        FirstName   string `json:"first_name"`
+        LastName    string `json:"last_name"`
+        Email       string `json:"email"`
+        Description string `json:"description"`
+        Role        string `json:"role"`
+        Phone       string `json:"phone"`
+}
+
+// Converter is responsible for converting data from one format to another.
+type Deserializer interface {
+        Deserialize(reader io.Reader) ([]Employee, error)
+}
+
+// CSVConverter is a Converter that can read data from CSV files.
+type CSVDeserializer struct{}
+
+// Convert reads data from a CSV file and returns a slice of Employee records.
+func (d CSVDeserializer) Deserialize(reader io.Reader) ([]Employee, error) <span class="cov8" title="1">{
+        csvReader := csv.NewReader(reader)
+        csvReader.Read() // skip the first line
+
+        var employees []Employee
+        for </span><span class="cov8" title="1">{
+                line, err := csvReader.Read()
+                if err == io.EOF </span><span class="cov8" title="1">{
+                        break</span>
+                } else<span class="cov8" title="1"> if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+
+                <span class="cov8" title="1">employee := Employee{
+                        ID:          line[0],
+                        FirstName:   line[1],
+                        LastName:    line[2],
+                        Email:       line[3],
+                        Description: line[4],
+                        Role:        line[5],
+                        Phone:       line[6],
+                }
+
+                employees = append(employees, employee)</span>
+        }
+
+        <span class="cov8" title="1">return employees, nil</span>
+}
+
+// JSONConverter is a Converter that can write data to JSON files.
+type JSONSerializer struct{}
+
+// Convert writes data to a JSON file and returns an error if any.
+func (s JSONSerializer) Serialize(writer io.Writer, employees []Employee) error <span class="cov8" title="1">{
+        jsonData, err := json.MarshalIndent(employees, "", "    ")
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">_, err = writer.Write(jsonData)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetConverter returns a Converter that can handle the specified data format.
+func NewDeserialize(format DataFormat) (Deserializer, error) <span class="cov8" title="1">{
+        switch format </span>{
+        case CSV:<span class="cov8" title="1">
+                return CSVDeserializer{}, nil</span>
+        // Add additional data formats here...
+        default:<span class="cov0" title="0">
+                return nil, errors.New("unsupported data format")</span>
+        }
+}
+
+// DetectDataFormat returns the data format of the specified file based on its file extension.
+func DetectDataFormat(filename string) (DataFormat, error) <span class="cov8" title="1">{
+        ext := strings.ToLower(filepath.Ext(filename))
+        switch ext </span>{
+        case ".csv":<span class="cov8" title="1">
+                return CSV, nil</span>
+        // Add additional file extensions here...
+        default:<span class="cov0" title="0">
+                return Unknown, errors.New("unknown file extension")</span>
+        }
+}
+
+func decode(inputFilePath string) ([]Employee, error) <span class="cov8" title="1">{
+        format, err := DetectDataFormat(inputFilePath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">deserializer, err := NewDeserialize(format)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">inputReader, err := os.Open(inputFilePath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer inputReader.Close()
+
+        employees, err := deserializer.Deserialize(inputReader)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return employees, nil</span>
+}
+
+func encode(employees []Employee, outputFilePath string) error <span class="cov8" title="1">{
+        outputFile, err := os.Create(outputFilePath)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error creating output file: %s", err)
+        }</span>
+        <span class="cov8" title="1">defer outputFile.Close()
+
+        serializer := JSONSerializer{}
+        if err := serializer.Serialize(outputFile, employees); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error serializing output file: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func main() <span class="cov0" title="0">{
+        inputFile := flag.String("input", "", "input file path")
+        outputFileName := flag.String("output", "", "output file name")
+        flag.Parse()
+
+        if *inputFile == "" || *outputFileName == "" </span><span class="cov0" title="0">{
+                fileName := filepath.Base(os.Args[0])
+                fmt.Printf("Usage: ./%s -input=input_file -output=output_file\n", fileName)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">employees, err := decode(*inputFile)
+        if employees == nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error decoding input file: %s", err)
+        }</span>
+
+        <span class="cov0" title="0">err = encode(employees, *outputFileName)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error writing output file: %s", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Println("Convert csv to json sucessfully")
+        }</span>
+
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

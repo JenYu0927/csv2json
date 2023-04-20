@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -52,6 +54,43 @@ func TestCSVDeserializer_Deserialize(t *testing.T) {
 	}
 }
 
+func TestDecode(t *testing.T) {
+	// Create a temporary test CSV file.
+	csvData := []byte(`ID,FirstName,LastName,Email,Description,Role,Phone
+1,John,Doe,john.doe@example.com,"John is a software engineer with 5 years of experience.",Software Engineer,555-555-5555`)
+	tempFile, err := os.Create("testInput.csv")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+	if _, err := tempFile.Write(csvData); err != nil {
+		t.Fatalf("Failed to write to temporary file: %v", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+
+	// Call decode() and check the result.
+	expected := []Employee{
+		{
+			ID:          "1",
+			FirstName:   "John",
+			LastName:    "Doe",
+			Email:       "john.doe@example.com",
+			Description: "John is a software engineer with 5 years of experience.",
+			Role:        "Software Engineer",
+			Phone:       "555-555-5555",
+		},
+	}
+	actual, err := decode(tempFile.Name())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Unexpected result. Got: %v, want: %v", actual, expected)
+	}
+}
+
 func TestJSONSerializer_Serialize(t *testing.T) {
 	employees := []Employee{
 		{
@@ -73,28 +112,6 @@ func TestJSONSerializer_Serialize(t *testing.T) {
 			Phone:       "555-555-5555",
 		},
 	}
-	/*
-			expected := `[
-		    {
-		        "id": "1",
-		        "first_name": "John",
-		        "last_name": "Doe",
-		        "email": "john.doe@example.com",
-		        "description": "John is a software engineer with 5 years of experience.",
-		        "role": "Software Engineer",
-		        "phone": "555-555-5555"
-		    },
-		    {
-		        "id": "2",
-		        "first_name": "Jane",
-		        "last_name": "Smith",
-		        "email": "jane.smith@example.com",
-		        "description": "Jane is a project manager with 10 years of experience.",
-		        "role": "Project Manager",
-		        "phone": "555-555-5555"
-		    }
-			]`
-	*/
 
 	serializer := JSONSerializer{}
 	buffer := new(bytes.Buffer)
@@ -103,4 +120,31 @@ func TestJSONSerializer_Serialize(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, buffer.Bytes())
 
+}
+
+func TestEncode(t *testing.T) {
+	// Create a temporary test CSV file.
+	employees := []Employee{
+		{
+			ID:          "1",
+			FirstName:   "John",
+			LastName:    "Doe",
+			Email:       "john.doe@example.com",
+			Description: "John is a software engineer with 5 years of experience.",
+			Role:        "Software Engineer",
+			Phone:       "555-555-5555",
+		},
+	}
+	tempFile, err := os.Create("testOutput.json")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	// Call encode() and check the result.
+
+	if err := encode(employees, tempFile.Name()); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	assert.FileExists(t, "testOutput.json")
 }

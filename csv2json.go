@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -111,47 +112,67 @@ func DetectDataFormat(filename string) (DataFormat, error) {
 	}
 }
 
-func main() {
-	if len(os.Args) != 3 {
-		fileName := filepath.Base(os.Args[0])
-		fmt.Printf("Usage: ./%s input_file output_file\n", fileName)
-		os.Exit(1)
-	}
-
-	inputFile := os.Args[1]
-	outputFileName := os.Args[2]
-
-	format, err := DetectDataFormat(inputFile)
+func decode(inputFilePath string) ([]Employee, error) {
+	format, err := DetectDataFormat(inputFilePath)
 	if err != nil {
-		log.Fatalf("Error detecting data format: %s", err)
+		return nil, err
 	}
 
 	deserializer, err := NewDeserialize(format)
 	if err != nil {
-		log.Fatalf("Error getting converter: %s", err)
+		return nil, err
 	}
 
-	inputReader, err := os.Open(inputFile)
+	inputReader, err := os.Open(inputFilePath)
 	if err != nil {
-		log.Fatalf("Error opening input file: %s", err)
+		return nil, err
+	}
+	defer inputReader.Close()
+
+	employees, err := deserializer.Deserialize(inputReader)
+	if err != nil {
+		return nil, err
 	}
 
-	employees, _ := deserializer.Deserialize(inputReader)
+	return employees, nil
+}
+
+func encode(employees []Employee, outputFilePath string) error {
+	outputFile, err := os.Create(outputFilePath)
+	if err != nil {
+		return fmt.Errorf("error creating output file: %s", err)
+	}
+	defer outputFile.Close()
 
 	serializer := JSONSerializer{}
-
-	outputFile, err := os.Create(outputFileName)
-	if err != nil {
-		log.Fatalf("Error writing file: %s", err)
+	if err := serializer.Serialize(outputFile, employees); err != nil {
+		return fmt.Errorf("error serializing output file: %s", err)
 	}
 
-	defer func() {
-		if err := outputFile.Close(); err != nil {
-			log.Fatalf("Error closing file: %s", err)
-		}
-	}()
+	return nil
+}
 
-	serializer.Serialize(outputFile, employees)
+func main() {
+	inputFile := flag.String("input", "", "input file path")
+	outputFileName := flag.String("output", "", "output file name")
+	flag.Parse()
 
-	fmt.Println("Convert csv to json sucessfully")
+	if *inputFile == "" || *outputFileName == "" {
+		fileName := filepath.Base(os.Args[0])
+		fmt.Printf("Usage: ./%s -input=input_file -output=output_file\n", fileName)
+		os.Exit(1)
+	}
+
+	employees, err := decode(*inputFile)
+	if employees == nil {
+		log.Fatalf("Error decoding input file: %s", err)
+	}
+
+	err = encode(employees, *outputFileName)
+	if err != nil {
+		log.Fatalf("Error writing output file: %s", err)
+	} else {
+		fmt.Println("Convert csv to json sucessfully")
+	}
+
 }
