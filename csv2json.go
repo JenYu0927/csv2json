@@ -153,22 +153,27 @@ func encode(employees []Employee, outputFilePath string) error {
 }
 
 func main() {
-	inputFile := flag.String("input", "", "input file path")
-	outputFileName := flag.String("output", "", "output file name")
+	var inputFile, outputFileName string
+
+	flag.StringVar(&inputFile, "i", "", "input file path")
+	flag.StringVar(&inputFile, "input", "", "input file path")
+	flag.StringVar(&outputFileName, "o", "", "output file name")
+	flag.StringVar(&outputFileName, "output", "", "output file name")
+
 	flag.Parse()
 
-	if *inputFile == "" || *outputFileName == "" {
+	if inputFile == "" || outputFileName == "" {
 		fileName := filepath.Base(os.Args[0])
-		fmt.Printf("Usage: ./%s -input=input_file -output=output_file\n", fileName)
+		fmt.Printf("Usage: ./%s -i|--input=<input_file> -o|--output=<output_file>\n", fileName)
 		os.Exit(1)
 	}
 
-	employees, err := decode(*inputFile)
+	employees, err := decode(inputFile)
 	if employees == nil {
 		log.Fatalf("Error decoding input file: %s", err)
 	}
 
-	err = encode(employees, *outputFileName)
+	err = encode(employees, outputFileName)
 	if err != nil {
 		log.Fatalf("Error writing output file: %s", err)
 	} else {
