@@ -113,7 +113,8 @@ func DetectDataFormat(filename string) (DataFormat, error) {
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Printf("Usage: %s input_file output_file\n", os.Args[0])
+		fileName := filepath.Base(os.Args[0])
+		fmt.Printf("Usage: ./%s input_file output_file\n", fileName)
 		os.Exit(1)
 	}
 
@@ -138,10 +139,19 @@ func main() {
 	employees, _ := deserializer.Deserialize(inputReader)
 
 	serializer := JSONSerializer{}
+
 	outputFile, err := os.Create(outputFileName)
 	if err != nil {
 		log.Fatalf("Error writing file: %s", err)
 	}
+
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			log.Fatalf("Error closing file: %s", err)
+		}
+	}()
+
 	serializer.Serialize(outputFile, employees)
 
+	fmt.Println("Convert csv to json sucessfully")
 }

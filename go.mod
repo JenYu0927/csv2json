@@ -2,7 +2,4 @@ module github.com/taylor.jiang/csv2json
 
 go 1.15
 
-require (
-	github.com/stretchr/testify v1.7.0
-	github.com/urfave/cli v1.22.5
-)
+require github.com/stretchr/testify v1.7.0
