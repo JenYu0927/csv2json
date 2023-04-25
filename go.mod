@@ -1,4 +1,4 @@
-module github.com/taylor.jiang/csv2json
+module csv2json
 
 go 1.15
 
